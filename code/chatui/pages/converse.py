@@ -24,7 +24,7 @@ import os
 import subprocess
 import time
 import sys
-
+import torch
 from chatui import assets, chat_client
 from chatui.prompts import prompts_llama3, prompts_mistral
 from chatui.utils import compile, database, logger
@@ -32,7 +32,7 @@ from chatui.utils import compile, database, logger
 from langgraph.graph import END, StateGraph
 
 PATH = "/"
-TITLE = "Agentic RAG: Chat UI"
+TITLE = "Agentic RIG: Chat UI"
 OUTPUT_TOKENS = 250
 MAX_DOCS = 5
 
@@ -103,7 +103,7 @@ def build_page(client: chat_client.ChatClient) -> gr.Blocks:
         
         router_use_nim = gr.State(False)
         retrieval_use_nim = gr.State(False)
-        generator_use_nim = gr.State(False)
+        generator_use_nim = gr.State(True)
         hallucination_use_nim = gr.State(False)
         answer_use_nim = gr.State(False)
 
@@ -816,6 +816,9 @@ def _stream_predict(
     chat_history: List[Tuple[str, str]],
 ) -> Any:
 
+    
+
+    # Proceed with further execution based on inputs and application logic
     inputs = {"question": question, 
               "generator_model_id": model_generator, 
               "router_model_id": model_router, 
@@ -847,12 +850,22 @@ def _stream_predict(
               "nim_hallucination_id": nim_hallucination_id,
               "nim_answer_id": nim_answer_id,
               "answer_use_nim": answer_use_nim}
-    
+
     if not valid_input(question):
         yield "", chat_history + [[str(question), "*** ERR: Unable to process query. Query cannot be empty. ***"]], gr.update(show_label=False)
     else: 
         try:
+            if generator_use_nim:
+                print("--- Using NVIDIA NIM ---")
+                # yield "", chat_history + [[question, "Using NVIDIA NIM..."]], gr.update()
+            elif torch.cuda.is_available():
+                print("--- Using Local GPU (Datagemma Model) ---")
+                # yield "", chat_history + [[question, "Using Local GPU (Datagemma Model)..."]], gr.update()
+            else:
+                print("--- Using Hugging Face API ---")
+                # yield "", chat_history + [[question, "Using Hugging Face API..."]], gr.update()
             actions = {}
+            print("Checkpoint 1")
             for output in app.stream(inputs):
                 actions.update(output)
                 yield "", chat_history + [[question, "Working on getting you the best answer..."]], gr.update(value=actions)
@@ -860,4 +873,5 @@ def _stream_predict(
                     final_value = value
             yield "", chat_history + [[question, final_value["generation"]]], gr.update(show_label=False)
         except Exception as e: 
-            yield "", chat_history + [[question, "*** ERR: Unable to process query. Check the Monitor tab for details. ***\n\nException: " + str(e)]], gr.update(show_label=False)
+            yield "", chat_history + [[question, f"*** ERR: Unable to process query. Check the Monitor tab for details. ***\n\nException: {str(e)}"]], gr.update(show_label=False)
+

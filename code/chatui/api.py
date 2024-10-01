@@ -51,11 +51,11 @@ class APIServer(FastAPI):
             blocks=pages.converse.build_page(self._client),
             path=f"/content{pages.converse.PATH}",
         )
-        _ = gr.mount_gradio_app(
-            self,
-            blocks=pages.kb.build_page(self._client),
-            path=f"/content{pages.kb.PATH}",
-        )
+        # _ = gr.mount_gradio_app(
+        #     self,
+        #     blocks=pages.kb.build_page(self._client),
+        #     path=f"/content{pages.kb.PATH}",
+        # )
 
         @self.get("/")
         async def root_redirect() -> FileResponse:

@@ -44,27 +44,21 @@ use_local_model = torch.cuda.is_available()
 
 # If local model should be used, load it
 if use_local_model:
-    try:
-        # Try loading the model from the local directory first
-        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
-        datagemma_model = AutoModelForCausalLM.from_pretrained(
-            model_name_or_path,
-            device_map=device,  # Use GPU if available, otherwise CPU
-            torch_dtype=torch.float32 if device == "cpu" else torch.float16,  # Use appropriate precision
-        )
-        print(f"Model successfully loaded from local path: {model_name_or_path}")
 
-    except Exception as e:
-        print(f"Error loading model locally: {e}")
-        print("Falling back to Hugging Face model download")
+        nf4_config = BitsAndBytesConfig(
+           load_in_4bit=True,
+           bnb_4bit_quant_type="nf4",
+           bnb_4bit_compute_dtype=torch.bfloat16
+        )
+
 
         # If local loading fails, fallback to Hugging Face model download
         model_name = 'google/datagemma-rig-27b-it'
         tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_TOKEN)
         datagemma_model = AutoModelForCausalLM.from_pretrained(
             model_name,
-            device_map=device,  # Use GPU if available, otherwise CPU
-            torch_dtype=torch.float32 if device == "cpu" else torch.float16,  # Use appropriate precision
+            quantization_config=nf4_config,  # Use GPU if available, otherwise CPU
+            torch_dtype=torch.bfloat16,  # Use appropriate precision
             token=HF_TOKEN
         )
         print(f"Model successfully loaded from Hugging Face: {model_name}")
