@@ -17,14 +17,57 @@ import os
 
 from typing_extensions import TypedDict
 from typing import List
-
+import data_gemma as dg
+from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+import torch
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser, JsonOutputParser
 from langchain_nvidia_ai_endpoints import ChatNVIDIA
 from langchain_community.tools.tavily_search import TavilySearchResults
-
+import requests
 from chatui.utils import database, nim
 
+DC_API_KEY = os.environ['DC_API_KEY']
+HF_TOKEN = os.environ['HF_TOKEN']
+#HF_API_KEY = os.environ.get("HF_API_KEY")
+HF_API_ENDPOINT = "https://vktc7ikl9zkw6msm.us-east-1.aws.endpoints.huggingface.cloud"  # Add your custom endpoint here
+
+# Initialize Data Commons API client
+dc = dg.DataCommons(api_key=DC_API_KEY)
+
+# Define the local model path (where the model is stored in your GitHub repo after uploading)
+model_name_or_path = "../models"  # Adjust this path based on where you store the model
+
+# Check if CUDA (GPU) is available for faster inference; otherwise, use CPU or fallback to API
+device = "cuda" if torch.cuda.is_available() else "cpu"
+use_local_model = torch.cuda.is_available()
+
+# If local model should be used, load it
+if use_local_model:
+    try:
+        # Try loading the model from the local directory first
+        tokenizer = AutoTokenizer.from_pretrained(model_name_or_path)
+        datagemma_model = AutoModelForCausalLM.from_pretrained(
+            model_name_or_path,
+            device_map=device,  # Use GPU if available, otherwise CPU
+            torch_dtype=torch.float32 if device == "cpu" else torch.float16,  # Use appropriate precision
+        )
+        print(f"Model successfully loaded from local path: {model_name_or_path}")
+
+    except Exception as e:
+        print(f"Error loading model locally: {e}")
+        print("Falling back to Hugging Face model download")
+
+        # If local loading fails, fallback to Hugging Face model download
+        model_name = 'google/datagemma-rig-27b-it'
+        tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_TOKEN)
+        datagemma_model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            device_map=device,  # Use GPU if available, otherwise CPU
+            torch_dtype=torch.float32 if device == "cpu" else torch.float16,  # Use appropriate precision
+            token=HF_TOKEN
+        )
+        print(f"Model successfully loaded from Hugging Face: {model_name}")
 ### State
 
 
@@ -80,6 +123,7 @@ from langchain.schema import Document
 ### Nodes
 
 
+
 def retrieve(state):
     """
     Retrieve documents from vectorstore
@@ -101,7 +145,7 @@ def retrieve(state):
 
 def generate(state):
     """
-    Generate answer using RAG on retrieved documents
+    Generate an answer using NVIDIA NIMs, the local model (with GPU or CPU), or the Hugging Face Inference API.
 
     Args:
         state (dict): The current graph state
@@ -109,23 +153,119 @@ def generate(state):
     Returns:
         state (dict): New key added to state, generation, that contains LLM generation
     """
-    print("---GENERATE---")
     question = state["question"]
     documents = state["documents"]
 
-    # RAG generation
-    prompt = PromptTemplate(
-        template=state["prompt_generator"],
-        input_variables=["question", "document"],
-    )
-    llm = nim.CustomChatOpenAI(custom_endpoint=state["nim_generator_ip"], 
-                               port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "8000",
-                               model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "meta/llama3-8b-instruct",
-                               temperature=0.7) if state["generator_use_nim"] else ChatNVIDIA(model=state["generator_model_id"], temperature=0.7)
-    rag_chain = prompt | llm | StrOutputParser()
-    generation = rag_chain.invoke({"context": documents, "question": question})
-    return {"documents": documents, "question": question, "generation": generation}
+    # Prepare documents for the prompt
+    retrieved_content = "\n".join([doc.page_content for doc in documents])
+    
+    # Define the interleaved prompt template
+    interleaved_prompt_template = """
+    Question: {question}
+    
+    You have access to the following documents:
+    {document}
+    
+    Please provide a response that leverages both the retrieved information and generation. 
+    Interleave your response with relevant portions of the documents to support your answer.
 
+    Answer:
+    """
+    
+    # Create a PromptTemplate object
+    prompt = PromptTemplate(
+        template=interleaved_prompt_template,
+        input_variables=["question", "document"]
+    )
+    
+    # NVIDIA NIMs logic
+    if state.get("generator_use_nim", False):
+        print("---GENERATE WITH NVIDIA NIMs---")
+    
+        # llm = nim.CustomChatOpenAI(
+        #     custom_endpoint=state["nim_generator_ip"], 
+        #     port=state["nim_generator_port"] if len(state["nim_generator_port"]) > 0 else "8000",
+        #     model_name=state["nim_generator_id"] if len(state["nim_generator_id"]) > 0 else "meta/llama3-8b-instruct",
+        #     temperature=0.7
+        # )
+        llm = ChatNVIDIA(model=state["generator_model_id"], temperature=0.7)
+        
+        # Chain the prompt template with the LLM and StrOutputParser
+        rag_chain = prompt | llm | StrOutputParser()
+        
+        # Invoke the chain with the inputs
+        generation = rag_chain.invoke({"question": question, "document": retrieved_content})
+        
+
+        
+    # If using the local model (either GPU or CPU)
+    else:
+        prompt_template = interleaved_prompt_template.format(question=question, document=retrieved_content)
+        # Define the maximum allowed input length for Hugging Face
+        max_input_length = 1512 - 150  # Leave space for 150 generated tokens
+        
+        # If input length exceeds max_input_length, truncate the prompt_template
+        if len(prompt_template) > max_input_length:
+            prompt_template = prompt_template[:max_input_length]
+            
+        if use_local_model:
+            print("---GENERATE WITH LOCAL MODEL (CUDA or CPU)---")
+            
+            # Tokenize the input for model inference
+            inputs = tokenizer(prompt_template, return_tensors="pt").to(device)
+    
+            # Generate the response with the interleaved input
+            with torch.no_grad():
+                outputs = datagemma_model.generate(
+                    inputs["input_ids"],
+                    max_new_tokens=150,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9,
+                    num_return_sequences=1,
+                )
+    
+            # Decode the generated response
+            generation = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+        # If CUDA is not available, use the Hugging Face Inference API
+        else:
+            
+            
+            # Proceed with the Hugging Face API call
+            print("---GENERATE WITH HUGGING FACE API---")
+            
+            if not HF_TOKEN:
+                raise ValueError("Hugging Face API key is missing. Please set the HF_TOKEN environment variable.")
+                        
+            headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+            payload = {
+                "inputs": prompt_template,
+                "parameters": {
+                    "max_new_tokens": 150,
+                    "temperature": 0.7,
+                    "top_p": 0.9,
+                    "do_sample": True
+                }
+            }
+            
+            response = requests.post(HF_API_ENDPOINT, headers=headers, json=payload)
+            
+            if response.status_code == 200:
+                generated_text = response.json()[0]["generated_text"]
+                generation = generated_text.split("Answer:")[-1].strip()  # Extract the portion after "Answer:"
+                
+            else:
+                error_msg = f"Error: {response.status_code}, {response.text}"
+                print(error_msg)
+                raise Exception(error_msg)
+
+    # Return the generation and documents
+    return {
+        "documents": documents,
+        "question": question,
+        "generation": generation
+    }
 
 def grade_documents(state):
     """
