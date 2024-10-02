@@ -6,7 +6,6 @@
 * [Quickstart](#quickstart)
    * [Prerequisites](#prerequisites)
    * [Tutorial (Desktop App)](#tutorial-desktop-app)
-   * [Tutorial (CLI-Only)](#tutorial-cli-only)
 * [License](#license)
 
 # NVIDIA AI Workbench: Introduction [![Open In AI Workbench](https://img.shields.io/badge/Open_In-AI_Workbench-76B900)](https://nvidia.github.io/workbench-example-agentic-rag/clone_me.html)
@@ -170,52 +169,6 @@ If you do not NVIDIA AI Workbench installed, first complete the installation for
    * `Environment` &rarr; `Secrets` &rarr; `Configure`. Specify the NVIDIA API Key and Tavily Search Key as project secrets.
 
 6. On the top right of the window, select **Chat**. A frontend user interface should automatically open in a new browser tab. Happy chatting!
-
-7. **Note:** When doing RAG, make sure you (1) upload the document AND (2) Change the Router prompt to focus on the topic of your uploaded documents. Both changes are required for successful RAG!
-
-## Tutorial (CLI-Only)
-Some users may choose to use the **CLI tool only** instead of the Desktop App. If you do not NVIDIA AI Workbench installed, first complete the installation for AI Workbench [here](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/workbench/). Then, 
-1. Fork this Project to your own GitHub namespace and copying the link
-
-   ```
-   https://github.com/[your_namespace]/<project_name>
-   ```
-   
-2. Open a shell and activating the Context you want to clone into by
-
-   ```
-   $ nvwb list contexts
-   
-   $ nvwb activate <desired_context>
-   ```
-
-   | :bulb: Tip                  |
-   | :---------------------------|
-   | Use ```nvwb help``` to see a full list of  AI Workbench commands. |
-   
-3. Clone this Project onto your desired machine by running
-
-   ```
-   $ nvwb clone project <your_project_link>
-   ```
-   
-4. Open the Project by
-
-   ```
-   $ nvwb list projects
-   
-   $ nvwb open <project_name>
-   ```
-
-5. Start **Chat** by
-
-   ```
-   $ nvwb start chat
-   ```
-
-   * Specify the NVIDIA API Key and Tavily Search Key as project secrets.
-
-6. A frontend user interface should automatically open in a new browser tab. Happy chatting!
 
 7. **Note:** When doing RAG, make sure you (1) upload the document AND (2) Change the Router prompt to focus on the topic of your uploaded documents. Both changes are required for successful RAG!
 
