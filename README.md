@@ -28,7 +28,7 @@ This project lets you:
   * Cloud endpoints using the [NVIDIA API Catalog](https://build.nvidia.com/explore/discover)
   * Self-hosted endpoints using [NVIDIA Inference Microservices (NIMs)](https://catalog.ngc.nvidia.com/orgs/nim/teams/meta/containers/llama3-8b-instruct/tags)
   * Third party self-hosted microservices like Ollama.
-* If we want to use the DataGemma Model which is the original model to do RIG, we can:
+* Can use the DataGemma model, a large language model (LLM) developed by Google that embodies the principles of Retrieval Interleaved Generation. It enhances AI capabilities by dynamically accessing and integrating real-time data from external sources during the response generation process. If we want to use the DataGemma Model which is the original model to do RIG, we can:
   * Download it from [huggingface](https://huggingface.co/google/datagemma-rig-27b-it)
   * If not GPU available, use [Huggingface API Endpoint](https://huggingface.co/docs/api-inference/en/index). YOu will have to get a paid version to create an inference endpoint
  
