@@ -30,7 +30,7 @@ from chatui.utils import database, nim
 DC_API_KEY = os.environ['DC_API_KEY']
 HF_TOKEN = os.environ['HF_TOKEN']
 #HF_API_KEY = os.environ.get("HF_API_KEY")
-HF_API_ENDPOINT = "https://vktc7ikl9zkw6msm.us-east-1.aws.endpoints.huggingface.cloud"  # Add your custom endpoint here
+HF_API_ENDPOINT = os.environ["HF_API_ENDPOINT"]  # Add your custom endpoint here
 
 # Initialize Data Commons API client
 dc = dg.DataCommons(api_key=DC_API_KEY)

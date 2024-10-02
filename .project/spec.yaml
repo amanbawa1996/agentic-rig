@@ -134,6 +134,8 @@ execution:
     description: Langsmith key
   - variable: DC_API_KEY
     description: ""
+  - variable: HF_API_ENDPOINT
+    description: Your endpoint for HF API
   mounts:
   - type: project
     target: /project/
