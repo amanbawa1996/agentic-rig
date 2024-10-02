@@ -22,12 +22,16 @@
 </p>
 
 ## Project Description
-This is an [NVIDIA AI Workbench](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/workbench/) project for developing a websearch-based [Retrieval Augmented Generation](https://blogs.nvidia.com/blog/what-is-retrieval-augmented-generation/) application with a customizable Gradio Chat app. It lets you:
+This is an [NVIDIA AI Workbench](https://www.nvidia.com/en-us/deep-learning-ai/solutions/data-science/workbench/) project which references a websearch-based [Retrieval Augmented Generation](https://blogs.nvidia.com/blog/what-is-retrieval-augmented-generation/) application with a customizable Gradio Chat app. What we will do over here is a concept called [Retrieval Interleaved Generation](https://ajithp.com/2024/09/13/enhancing-ai-accuracy-from-retrieval-augmented-generation-rag-to-retrieval-interleaved-generation-rig-with-googles-datagemma/). Retrieval Interleaved Generation (RIG) is a novel technique that interleaves retrieval and generation steps, allowing AI models to dynamically access and incorporate real-time information. 
+This project lets you:
 * Embed your documents in the form of webpages or PDFs into a locally running Chroma vector database.
 * Run inference using remotely running endpoints and microservices.
   * Cloud endpoints using the [NVIDIA API Catalog](https://build.nvidia.com/explore/discover)
   * Self-hosted endpoints using [NVIDIA Inference Microservices (NIMs)](https://catalog.ngc.nvidia.com/orgs/nim/teams/meta/containers/llama3-8b-instruct/tags)
   * Third party self-hosted microservices like Ollama.
+* If we want to use the DataGemma Model which is the original model to do RIG, we can:
+  * Download it from [huggingface](https://huggingface.co/google/datagemma-rig-27b-it)
+  * If not GPU available, use [Huggingface API Endpoint](https://huggingface.co/docs/api-inference/en/index). YOu will have to get a paid version to create an inference endpoint
  
 <img src="./code/chatui/static/agentic-flow.png" width="100%" height="auto">
 
