@@ -9,7 +9,6 @@
 * [License](#license)
 
 # NVIDIA AI Workbench: Introduction [![Open In AI Workbench](https://img.shields.io/badge/Open_In-AI_Workbench-76B900)](https://nvidia.github.io/workbench-example-agentic-rag/clone_me.html)
-
 <!-- Banner Image -->
 <img src="https://developer-blogs.nvidia.com/wp-content/uploads/2024/07/rag-representation.jpg" width="100%">
 
@@ -37,10 +36,13 @@ This project lets you:
 
 This project uses an agentic workflow depicted in the above diagram to improve response quality in RAG. Using LangGraph, user queries will first be sorted under a RAG or Websearch pipeline depending on an LLM evaluation of the query topic. Depending on its user-configurable prompt, the router LLM can narrow its focus on turning a specific subject or topic routable to the RAG Pipeline. 
 
+<img src="./code/chatui/static/RIG.png" width="100%" height="auto">
+
+
 <blockquote>
 <details>
 <summary>
-<b>Expand this section for a description of RAG Pipeline.</b>
+<b>Expand this section for a description of RAG/RIG Pipeline.</b>
 </summary>
 
 Under the retrieval pipeline, the user query is first compared to documents in the vector database and the most relevant documents are retrieved. 
@@ -151,6 +153,11 @@ AI Workbench will prompt you to provide a few pieces of information before runni
    
    * An NVIDIA API Key. You can generate one under ``Get API Key`` on any API Catalog [model card](https://build.nvidia.com/mistralai/mistral-7b-instruct-v2)
    * A Tavily Search API Key. You can generate one under a free account (1000 searches/month) [here](https://app.tavily.com/home).
+   * Huggingface token. It is free [here](https://huggingface.co/docs/hub/en/security-tokens)
+   * OpenAI API Key
+   * Langsmith API KEY (optional)
+   * Datacommons API KEY [DC_API_KEY](https://apikeys.datacommons.org), if you want to use gpu with model downloading
+   * Huggingface Inference API as mentioned earlier
 
 ## Tutorial (Desktop App)
 
@@ -170,17 +177,21 @@ If you do not NVIDIA AI Workbench installed, first complete the installation for
    
 5. When the build completes, set the following configurations.
 
-   * `Environment` &rarr; `Secrets` &rarr; `Configure`. Specify the NVIDIA API Key and Tavily Search Key as project secrets.
+   * `Environment` &rarr; `Secrets` &rarr; `Configure`. Specify the all the keys as project secrets.
 
 6. On the top right of the window, select **Chat**. A frontend user interface should automatically open in a new browser tab. Happy chatting!
 
 7. **Note:** When doing RAG, make sure you (1) upload the document AND (2) Change the Router prompt to focus on the topic of your uploaded documents. Both changes are required for successful RAG!
+8. **Note:** Right now I am using NVIDIA NIM models, like ChatNVIDIA to do your RIG to make it easier. If you want to experiment with the DataGemma model after configuring everything, in the file of **converse.py**, modify this line 106 and set it to false:
+
+```
+generator_use_nim = gr.State(True)
+
+```
+
 
 # License
 This NVIDIA AI Workbench example project is under the [Apache 2.0 License](https://github.com/NVIDIA/workbench-example-agentic-rag/blob/main/LICENSE.txt)
 
 This project may utilize additional third-party open source software projects. Review the license terms of these open source projects before use. Third party components used as part of this project are subject to their separate legal notices or terms that accompany the components. You are responsible for confirming compliance with third-party component license terms and requirements. 
 
-| :question: Have Questions?  |
-| :---------------------------|
-| Please direct any issues, fixes, suggestions, and discussion on this project to the DevZone Members Only Forum thread [here](https://forums.developer.nvidia.com/t/support-workbench-example-project-agentic-rag/303414) |
